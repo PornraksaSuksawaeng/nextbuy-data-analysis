@@ -1,0 +1,32 @@
+# Install: pip install -r requirements.txt
+
+# CORE DATA
+pandas==2.2.2
+numpy==1.26.4
+
+# VISUALIZATION
+matplotlib==3.9.0
+seaborn==0.13.2
+plotly==5.22.0
+
+# MACHINE LEARNING
+scikit-learn==1.5.0
+xgboost==2.0.3
+joblib==1.4.2
+
+# NOTEBOOK
+ipykernel==6.29.4
+jupyter==1.0.0
+
+# DASHBOARD
+dash==2.17.1
+dash-bootstrap-components==1.6.0
+
+# BONUS FEATURES
+mlxtend==0.23.1       # Association rules (apriori)
+shap==0.45.1          # Model interpretability
+networkx==3.3         # Co-purchase graph
+pyvis==0.3.2          # Interactive network visualization
+
+
+
