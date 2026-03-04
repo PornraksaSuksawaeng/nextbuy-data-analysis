@@ -1,0 +1,22 @@
+# DATA FILE TOO BIG
+data/
+.csv
+
+# PYTHON
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+
+# JUPYTER
+.ipynb_checkpoints/
+
+# MODEL EXPORT
+# *.joblib
+
+# OS
+.DS_Store
+Thumbs.db
+
+# STREAMLIT
+.streamlit/secrets.toml
