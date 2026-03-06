@@ -49,12 +49,14 @@ nextbuy/
 │   ├── products.csv
 │   ├── aisles.csv
 │   └── departments.csv
+├── figures/               # Charts exported from notebooks
 ├── notebooks/
-│   ├── 01_cleaning.ipynb  # Pornraksa — Loading, merging, cleaning
-│   ├── 02_eda.ipynb       # Pornraksa + Léo — EDA visualizations
-│   ├── 03_models.ipynb    # Léo + Mathis — Feature engineering + ML
-│   ├── 04_bonus.ipynb     # Nicolas — Segmentation, rules, SHAP, network
-│   └── notebook.ipynb     # Final merged notebook
+│   ├── 01_cleaning.ipynb      # Pornraksa — Loading, merging, cleaning
+│   ├── 02_eda.ipynb           # Pornraksa + Léo — EDA visualizations
+│   ├── 03_models_leo.ipynb    # Léo — Feature engineering + ML models
+│   ├── 03_models_mathis.ipynb # Mathis — ML review, tuning, GridSearch
+│   ├── 04_bonus.ipynb         # Nicolas — Segmentation, rules, SHAP, network
+│   └── notebook.ipynb         # Final merged notebook
 ├── dashboard/
 │   └── app.py             # Dash application
 ├── requirements.txt
@@ -69,8 +71,9 @@ nextbuy/
 |---|---|---|
 | `01_cleaning.ipynb` | Pornraksa | Load 5 CSV files, merge, clean, handle NaN |
 | `02_eda.ipynb` | Pornraksa + Léo | 12 business analyses, varied visualizations |
-| `03_models.ipynb` | Léo + Mathis | Feature engineering, 2 ML models, GridSearch, metrics |
-| `04_bonus.ipynb` | Nicolas | KMeans clustering, association rules, SHAP, co-purchase network |
+| `03_models_leo.ipynb` | Léo | Feature engineering, 2 ML models, metrics |
+| `03_models_mathis.ipynb` | Mathis | ML review, GridSearch tuning, evaluation |
+| `04_bonus.ipynb` | Pornraksa | KMeans clustering, association rules, SHAP, co-purchase network |
 | `notebook.ipynb` | Pornraksa | Final merged notebook for submission |
 
 ---
@@ -83,9 +86,10 @@ Each member works on **their own branch** to avoid conflicts:
 |---|---|
 | `feat/data-cleaning` | Pornraksa |
 | `feat/eda` | Pornraksa + Léo |
-| `feat/models` | Léo + Mathis |
-| `feat/bonus` | Nicolas |
-| `feat/dashboard` | Pornraksa + Mathis |
+| `feat/models-leo` | Léo |
+| `feat/models-mathis` | Mathis |
+| `feat/bonus` | Pornraksa |
+| `feat/dashboard` | Pornraksa + Mathis + Nicolas |
 
 **Golden rule: never push directly to `main`. Always merge into `dev` first via a Pull Request.**
 
