@@ -136,3 +136,25 @@ with tab1:
     )
 
     st.plotly_chart(fig1, use_container_width=True)
+
+# Q2 - Order Heatmap
+with tab2:
+    order_dedup = filtered_df.drop_duplicates(subset=['order_id'])
+    pivot = order_dedup.pivot_table(
+        index='order_dow',
+        columns='order_hour_of_day',
+        values='order_id',
+        aggfunc='count'
+    )
+
+    day_labels = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+    fig2 = go.Figure(go.Heatmap(
+        z=pivot.values,
+        x=[f"{hour}:00" for hour in pivot.columns],
+        y=[day_labels[day] for day in pivot.index],
+        colorscale='Blues',
+        hoverongaps=False,
+        hovertemplate='Day: %{y}<br>Hour: %{x}<br>Orders: %{z}<extra></extra>'
+    ))
+    st.plotly_chart(fig2, use_container_width=True)
