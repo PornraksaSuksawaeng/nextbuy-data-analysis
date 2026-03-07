@@ -155,6 +155,7 @@ with tab2:
         y=[day_labels[day] for day in pivot.index],
         colorscale='Blues',
         hoverongaps=False,
+        colorbar=dict(title='Number of Orders'),
         hovertemplate='Day: %{y}<br>Hour: %{x}<br>Orders: %{z}<extra></extra>'
     ))
     st.plotly_chart(fig2, use_container_width=True)
