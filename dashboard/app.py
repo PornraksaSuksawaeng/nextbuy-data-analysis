@@ -11,14 +11,14 @@ import numpy as np
 import plotly.graph_objects as go
 import joblib
 
-# Page configuration 
+# Page configuration --------------------------------------------------------------
 st.set_page_config(
     page_title="NextBuy Dashboard",
     page_icon="cart",
     layout="wide",
 )
 
-# Data and model loading 
+# Data and model loading -------------------------------------------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, '..', 'data')
 MODEL1_PATH = os.path.join(BASE_DIR, '..', 'models', 'model1.joblib')
@@ -40,18 +40,18 @@ def load_models2():
         return joblib.load(MODEL2_PATH)
     return None
 
-# Load data 
+# Load data ------------------------------------------------------------------------
 try:
     df = load_data()
 except FileNotFoundError:
     st.error("Data file not found. Please ensure 'cleaned_data.csv' is in the 'data' directory.")
     st.stop()
 
-# Load models
+# Load models ------------------------------------------------------------------------
 model1 = load_models1()
 model2 = load_models2()
 
-# Sidebar filters
+# Sidebar filters -----------------------------------------------------------------------------
 st.title("NextBuy Dashboard")
 st.sidebar.caption("EPITECH B1 - Data Science Project - 2026")
 st.sidebar.divider()
@@ -71,7 +71,7 @@ selected_aisle = st.sidebar.selectbox("Select Aisle", aisles)
 st.sidebar.divider()
 st.sidebar.caption('14M rows - 5 datasets - 12 analytics - 2 ML models')
 
-# Filter data based on selections
+# Filter data based on selections --------------------------------------------------------------
 filtered_df = df.copy()
 if selected_department != 'All':
     filtered_df = filtered_df[filtered_df['department'] == selected_department]
@@ -80,12 +80,12 @@ if selected_aisle != 'All':
 
 df_reorder = filtered_df[filtered_df['is_first_order'] == 0]
 
-# Header
+# Header ------------------------------------------------------------------------------
 st.title("NextBuy - Customer Purchase Analysis")
 st.caption("Analyzing customer purchase patterns and predicting next purchases")
 st.divider()
 
-# KPis cards
+# KPis cards -------------------------------------------------------------------------
 total_orders = filtered_df['order_id'].nunique()
 total_products = filtered_df['product_name'].nunique()
 avg_cart_size = filtered_df.groupby('order_id')['product_id'].count().mean()
@@ -101,3 +101,10 @@ col5.metric("Most Purchased Product", total_product)
 
 st.caption(f'Top product: **{total_product}**')
 st.divider()
+
+# Charts -----------------------------------------------------------------------------
+st.subheader("Exploratory Data Analysis")
+
+tab1, tab2, tab3 = st.tabs(["Best Sellers", "Order Heatmap", "Reorder Rate by Department"])
+
+
