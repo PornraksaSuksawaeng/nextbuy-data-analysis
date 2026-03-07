@@ -107,4 +107,32 @@ st.subheader("Exploratory Data Analysis")
 
 tab1, tab2, tab3 = st.tabs(["Best Sellers", "Order Heatmap", "Reorder Rate by Department"])
 
+# Q1 - Best Sellers
+with tab1:
+    top_n = st.slider("Number of products to display", min_value=5, max_value=30, value=10)
 
+    total_products = (filtered_df
+        .groupby('product_name')['order_id']
+        .count()
+        .nlargest(top_n)
+        .reset_index()
+        .rename(columns={'order_id': 'orders'})
+        .sort_values('orders')
+    )
+
+    fig1 = go.Figure(go.Bar(
+        x=total_products['orders'],
+        y=total_products['product_name'],
+        orientation='h',
+        marker_color='steelblue',
+        text=total_products['orders'],
+        textposition='outside'
+    ))
+
+    fig1.update_layout(
+        title=f"Top {top_n} Best-Selling Products",
+        xaxis_title="Number of Orders",
+        height=max(400, top_n * 30)
+    )
+
+    st.plotly_chart(fig1, use_container_width=True)
