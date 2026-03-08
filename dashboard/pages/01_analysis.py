@@ -81,6 +81,13 @@ else:
         .rename(columns={"reordered": "reorder_rate"})              
     )
 
+    scatter_data = scatter_data[
+        # NOTE: Exclude day 0 because the context of 'days since prior order' = 0 is ambiguous (could be first order or back-to-back orders) and it skews the analysis
+        (scatter_data["days_since_prior_order"] > 0) &
+        # NOTE: Exclude days > 30 because it regroups all orders with 30+ days into a single category, which skews the analysis
+        (scatter_data["days_since_prior_order"] < 30)
+    ]
+
     z = np.polyfit(scatter_data["days_since_prior_order"], scatter_data["reorder_rate"], 1)
     p = np.poly1d(z)
 
@@ -96,6 +103,7 @@ else:
         mode='markers',
         name='Reorder Rate',
         marker=dict(size=10, color='steelblue', opacity=0.6),
+        hovertemplate='Days since prior order: %{x}<br>Reorder rate: %{y:.1%}<extra></extra>'
     ))
 
     fig7.add_trace(go.Scatter(
@@ -125,10 +133,10 @@ else:
 
     with st.expander("Analysis"):
         st.markdown("""
-        The reorder rate is highest at day 1, which likely corresponds to customers who place back-to-back orders. 
-        This could indicate customers who are replenishing items they just bought or who are making multiple purchases in a short period. 
-        The reorder rate then drops sharply and stabilizes around 20-30% for days 5-30, suggesting that customers are more likely to reorder within the first month after their previous purchase. 
-        After day 30, the reorder rate declines further, indicating that customers are less likely to reorder as more time passes since their last order.
+        The reorder rate is highest around 10 days since the prior order, suggesting that customers are most likely to reorder around this time frame.
+        This could be due to typical consumption patterns or the time it takes for customers to realize they need to restock.
+        The reorder rate drops significantly after 20 days, indicating that customers are less likely to reorder if too much time has passed since their last purchase.
+        This insight can help inform marketing strategies, such as sending reminder emails or promotions around the 10-day mark to encourage reorders.
         """)
     
     st.divider()
