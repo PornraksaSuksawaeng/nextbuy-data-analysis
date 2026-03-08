@@ -201,6 +201,28 @@ with tab3:
 
 st.divider()
 
+# ML Predictions ----------------------------------------------------------------------
+st.subheader("Machine Learning Predictions")
+panel1, panel2 = st.columns(2)
+
+# Machine Learning Model 1 - Next Product Prediction
+with panel1:
+    st.markdown("Next Product Prediction")
+    st.caption("Predicting the next product a customer is likely to purchase based on their order history and other features.")
+
+    if model1 is None:
+        st.warning("Model 1 not found. Please ensure 'model1.joblib' is in the 'models' directory.")
+    else:
+        st.success("Model 1 loaded successfully!")
+        st.info("This model predicts the next product a customer is likely to purchase based on their order history and other features.")
+
+        # TODO: Add two columns with sliders for user input features (e.g., total_orders, avg_cart_size, reorder_rate, etc.)
+
+        # TODO: Add a button to trigger the prediction and display the predicted product and its probability.
+
+        # TODO: Add exception handling for the prediction process and display error messages if the prediction fails.
+
+
 # PLEASE DO NOT DELETED THE BELOW COMMENT, IT'S A REMINDER FOR THE FUTURE WORKS
 
 # BELOW NEED TO HAD Q6 - Reorder Rate by Department
