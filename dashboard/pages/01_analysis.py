@@ -120,7 +120,7 @@ else:
         yaxis=dict(tickformat=".0%"),
         template="plotly_white",
         height=400,
-        legend=dict(orientation="h", y=1.1)
+        legend=dict(orientation="h", y=1.1, x = 0.5, xanchor='center')
     )
 
     st.plotly_chart(fig7, use_container_width=True)
@@ -180,7 +180,8 @@ fig8.update_layout(
     barmode='stack',
     xaxis=dict(tickformat='.0%', title='Proportion'),
     height=460,
-    legend=dict(orientation='h', y=1.05)
+    # legend white transparent background and positioned above and outside the chart to avoid overlapping with the bars
+    legend=dict(orientation='h', y = 1.10, x = 0.5, xanchor='center') 
 )
 
 st.plotly_chart(fig8, use_container_width=True)
@@ -201,3 +202,92 @@ with st.expander("Analysis"):
     """)
 
 st.divider()
+
+# Q9 - First item added to cart -------------------------------------------------------------
+st.subheader("Q9: First Item Added to Cart")
+st.caption("Analyzes which products are most commonly the first item added to the cart in an order.")
+
+top_n_q9 = st.slider("Number of products to display", min_value=5, max_value=25, value=15, key="q9_n")
+first_items = (filtered[filtered["add_to_cart_order"] == 1]
+    .groupby("product_name")["order_id"]
+    .count()
+    .nlargest(top_n_q9)
+    .reset_index()
+    .rename(columns={"order_id": "first_item_count"})
+    .sort_values("first_item_count")
+)
+
+fig9 = go.Figure(go.Bar(
+    x=first_items["first_item_count"],
+    y=first_items["product_name"],
+    orientation="h",
+    marker_color="steelblue",
+    text=first_items["first_item_count"],
+    textposition="outside"
+))
+
+fig9.update_layout(
+    title=f"Top {top_n_q9} Products Added First to Cart",
+    xaxis_title="Number of times added first",
+    height=max(400, top_n_q9 * 30)
+)
+
+st.plotly_chart(fig9, use_container_width=True)
+
+with st.expander("Analysis"):
+    st.markdown("""
+    The most commonly added first item is often a staple product that customers frequently purchase, such as milk or bread.
+    This suggests that customers may start their shopping with essential items and then add complementary products to their cart.
+    Understanding which products are commonly added first can help retailers optimize product placement and promotions to encourage additional purchases.
+    For example, if milk is often the first item added, placing it near related products like cereal or cookies could increase cross-selling opportunities.
+    """)
+
+st.divider()
+
+# Q11 - Reorder rate by hour of day -------------------------------------------------------------
+st.subheader("Q11: Reorder Rate by Hour of Day")
+st.caption("Analyzes how the reorder rate varies by the hour of the day when the order was placed, using only reorder instances (first orders excluded).")
+
+if len(df_reorder) == 0:
+    st.warning("No data available for this selection. Please adjust the filters.")
+else:
+    reorder_by_hour = (df_reorder
+        .groupby("order_hour_of_day")["reordered"]
+        .mean()
+        .reset_index()
+        .rename(columns={"reordered": "reorder_rate"})
+    )
+
+    fig11 = go.Figure()
+    fig11.add_trace(go.Scatter(
+        x=reorder_by_hour["order_hour_of_day"],
+        y=reorder_by_hour["reorder_rate"],
+        mode='lines+markers',
+        name='Reorder Rate',
+        line=dict(color='steelblue', width=2),
+        marker=dict(size=8, color='steelblue'),
+        hovertemplate='Hour: %{x}:00<br>Reorder rate: %{y:.1%}<extra></extra>'
+    ))
+
+    fig11.update_layout(
+        title="Reorder Rate by Hour of Day",
+        xaxis_title="Hour of Day",
+        yaxis_title="Average Reorder Rate",
+        yaxis=dict(tickformat=".0%"),
+        height=400,
+    )
+
+    st.plotly_chart(fig11, use_container_width=True)
+
+    peak_hour = reorder_by_hour.loc[reorder_by_hour["reorder_rate"].idxmax(),]
+    low_hour = reorder_by_hour.loc[reorder_by_hour["reorder_rate"].idxmin(),]
+    c1, c2 = st.columns(2)
+    c1.metric("Peak reorder hour", f"{peak_hour['reorder_rate']:.1%}", f"at {int(peak_hour['order_hour_of_day'])}h")
+    c2.metric("Lowest reorder hour", f"{low_hour['reorder_rate']:.1%}", f"at {int(low_hour['order_hour_of_day'])}h")
+
+    with st.expander("Analysis"):
+        st.markdown("""
+        The reorder rate is highest during the late morning and early afternoon hours, peaking around 11 AM to 1 PM. This could be because customers are more likely to place orders during their lunch break or when they have more free time to shop online.
+        The reorder rate drops significantly during the late night and early morning hours, suggesting that customers are less likely to place orders during these times, possibly due to sleep or other activities.
+        Understanding the hourly patterns of reorder behavior can help retailers optimize their marketing efforts, such as sending targeted promotions or reminders during peak reorder hours to encourage repeat purchases.
+        """)
