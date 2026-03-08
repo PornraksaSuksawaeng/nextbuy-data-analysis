@@ -201,9 +201,44 @@ with tab3:
 
 st.divider()
 
-# PLEASE DO NOT DELETED THE BELOW COMMENT, IT'S A REMINDER FOR THE FUTURE WORKS
+# ML Predictions ----------------------------------------------------------------------
+st.subheader("Machine Learning Predictions")
+panel1, panel2 = st.columns(2)
 
-# BELOW NEED TO HAD Q6 - Reorder Rate by Department
+# Machine Learning Model 1 - Next Product Prediction
+with panel1:
+    st.markdown("Next Product Prediction")
+    st.caption("Predicting the next product a customer is likely to purchase based on their order history and other features.")
+
+    if model1 is None:
+        st.warning("Model 1 not found. Please ensure 'model1.joblib' is in the 'models' directory.")
+    else:
+        st.success("Model 1 loaded successfully!")
+        st.info("This model predicts the next product a customer is likely to purchase based on their order history and other features.")
+
+        # TODO: Add two columns with sliders for user input features (e.g., total_orders, avg_cart_size, reorder_rate, etc.)
+
+        # TODO: Add a button to trigger the prediction and display the predicted product and its probability.
+
+        # TODO: Add exception handling for the prediction process and display error messages if the prediction fails.
+
+# Machine Learning Model 2 - Cart Size Prediction
+with panel2:
+    st.markdown("Cart Size Prediction")
+    st.caption("Predicting the cart size a customer is likely to have in their next order based on their order history and other features.")
+
+    if model2 is None:
+        st.warning("Model 2 not found. Please ensure 'model2.joblib' is in the 'models' directory.")
+    else:
+        st.success("Model 2 loaded successfully!")
+        st.info("This model predicts the cart size (number of products) a customer is likely to have in their next order based on their order history and other features.")
+    
+        # TODO: Add two columns with sliders for user input features (e.g., avg reorder rate, order hour of day, days of week, days since last order, etc.)
+
+        # TODO: Add a button to trigger the prediction and display the predicted cart size and its confidence interval.
+
+        # TODO: Add exception handling for the prediction process and display error messages if the prediction fails.
+
 # DISCUSS THE ML PREDICTION WITH LEO AND THE FEATURE IMPORTANCE
 # DISCUSS THE ML CART SIZE PREDICTION WITH MATHIS AND THE FEATURE IMPORTANCE
 # MAYBE ADD A NEW VIEW FOR BETTER UX
