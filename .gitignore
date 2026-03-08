@@ -1,22 +1,36 @@
-# DATA FILE TOO BIG
-data/
-.csv
+# Credentials and environment variables ------------------------------------------
+.env
+.env.local
+.env.*.local
 
-# PYTHON
-__pycache__/
-*.py[cod]
+# Data files too big to be tracked by git -------------------------------------------------------
+data/
+*.csv
+*.json
+*.xlsx
+
+# Models export from notebook too big to be tracked by git -------------------------------------------------------
+models/
+*.joblib
+*.pkl
+
+# Python virtual environment and bytecode files -------------------------------------------------------
+venv/
 .venv/
+env/
+__pycache__/
+*.pyc
+*.py[cod]
 *.egg-info/
 
-# JUPYTER
+# Jupyter Notebook --------------------------------------------------------
 .ipynb_checkpoints/
+*.ipynb_checkpoints
 
-# MODEL EXPORT
-# *.joblib
-
-# OS
+# Operating system files -------------------------------------------------------
 .DS_Store
 Thumbs.db
+AppleDouble
 
-# STREAMLIT
+# Streamlit secrets file (contains sensitive information) -------------------------------------------------------
 .streamlit/secrets.toml
