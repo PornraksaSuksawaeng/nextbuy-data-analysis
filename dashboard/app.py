@@ -232,6 +232,12 @@ with panel2:
     else:
         st.success("Model 2 loaded successfully!")
         st.info("This model predicts the cart size (number of products) a customer is likely to have in their next order based on their order history and other features.")
+    
+        # TODO: Add two columns with sliders for user input features (e.g., avg reorder rate, order hour of day, days of week, days since last order, etc.)
+
+        # TODO: Add a button to trigger the prediction and display the predicted cart size and its confidence interval.
+
+        # TODO: Add exception handling for the prediction process and display error messages if the prediction fails.
 
 # DISCUSS THE ML PREDICTION WITH LEO AND THE FEATURE IMPORTANCE
 # DISCUSS THE ML CART SIZE PREDICTION WITH MATHIS AND THE FEATURE IMPORTANCE
