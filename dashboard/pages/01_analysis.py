@@ -140,3 +140,64 @@ else:
         """)
     
     st.divider()
+
+# Q8 - Organic proportion by department -------------------------------------------------------------
+st.subheader("Q8: Organic Proportion by Department")
+st.caption("Shows the proportion of organic products ordered in each department.")
+
+filtered['is_organic'] = filtered['product_name'].str.contains('Organic', case=False, na=False).astype(int)
+
+organic_proportion = (filtered
+    .groupby('department')['is_organic']
+    .agg(['sum', 'count'])
+    .rename(columns={'sum': 'organic_count', 'count': 'total_count'})
+)
+
+organic_proportion['organic_pct'] = organic_proportion['organic_count'] / organic_proportion['total_count']
+organic_proportion['non_organic_pct'] = 1 - organic_proportion['organic_pct']
+organic_proportion = organic_proportion.sort_values('organic_pct')
+
+fig8 = go.Figure()
+fig8.add_trace(go.Bar(
+    y=organic_proportion.index,
+    x=organic_proportion['organic_pct'],
+    name='Organic',
+    orientation='h',
+    marker_color='steelblue',
+    text=organic_proportion['organic_pct'].apply(lambda x: f"{x:.1%}"),
+    textposition='inside'
+))
+
+fig8.add_trace(go.Bar(
+    y=organic_proportion.index,
+    x=organic_proportion['non_organic_pct'],
+    name='Non-organic',
+    orientation='h',
+    marker_color='lightgray'
+))
+
+fig8.update_layout(
+    barmode='stack',
+    xaxis=dict(tickformat='.0%', title='Proportion'),
+    height=460,
+    legend=dict(orientation='h', y=1.05)
+)
+
+st.plotly_chart(fig8, use_container_width=True)
+
+top5_organic = organic_proportion.sort_values('organic_pct', ascending=False).head(5)
+top5_organic.columns = ['Organic count', 'Total count', 'Organic share', 'Non-organic share']
+top5_organic['Organic share'] = top5_organic['Organic share'].map("{:.1%}".format)
+
+with st.expander("Top 5 departments by organic share"):
+    st.dataframe(top5_organic, use_container_width=True, hide_index=True)
+
+with st.expander("Analysis"):
+    st.markdown("""
+    The produce department has the highest proportion of organic products, which is expected given that fruits and vegetables are commonly available in organic varieties.
+    The dairy and eggs department also has a significant share of organic products, reflecting consumer demand for organic options in these categories.
+    Departments like alcohol and pet supplies have very low proportions of organic products, likely due to limited availability and consumer interest in organic options in these categories.
+    This analysis can help inform inventory decisions and marketing strategies for promoting organic products in departments where they are most popular.
+    """)
+
+st.divider()
