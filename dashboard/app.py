@@ -222,6 +222,16 @@ with panel1:
 
         # TODO: Add exception handling for the prediction process and display error messages if the prediction fails.
 
+# Machine Learning Model 2 - Cart Size Prediction
+with panel2:
+    st.markdown("Cart Size Prediction")
+    st.caption("Predicting the cart size a customer is likely to have in their next order based on their order history and other features.")
+
+    if model2 is None:
+        st.warning("Model 2 not found. Please ensure 'model2.joblib' is in the 'models' directory.")
+    else:
+        st.success("Model 2 loaded successfully!")
+        st.info("This model predicts the cart size (number of products) a customer is likely to have in their next order based on their order history and other features.")
 
 # DISCUSS THE ML PREDICTION WITH LEO AND THE FEATURE IMPORTANCE
 # DISCUSS THE ML CART SIZE PREDICTION WITH MATHIS AND THE FEATURE IMPORTANCE
