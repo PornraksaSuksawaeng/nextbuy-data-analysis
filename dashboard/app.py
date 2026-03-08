@@ -160,6 +160,47 @@ with tab2:
     ))
     st.plotly_chart(fig2, use_container_width=True)
 
+# Q6 - Reorder Rate by Department
+with tab3:
+    if len(df_reorder) == 0:
+        st.info("No reorder data available for the selected filters.")
+    else:
+        reorder_department = (df_reorder
+            .groupby('department')['reordered'] 
+            .mean()
+            .reset_index()
+            .rename(columns={'reordered': 'reorder_rate'})
+        )
+        avg_cart_size = reorder_department['reorder_rate'].mean()
+
+        fig3 = go.Figure(go.Bar(
+            x=reorder_department['reorder_rate'],
+            y=reorder_department['department'],
+            orientation='h',
+            marker_color='steelblue',
+            text=reorder_department['reorder_rate'].apply(lambda x: f"{x:.2%}"),
+            textposition='outside'
+        ))
+
+        fig3.add_vline(
+            x=avg_cart_size,
+            line_dash="dash",
+            line_color="orange",
+            annotation_text=f"Avg Reorder Rate: {avg_cart_size:.2%}",
+            annotation_position="top right"
+        )
+
+        fig3.update_layout(
+            title=f"Reorder Rate by Department",
+            xaxis_title="Reorder Rate",
+            yaxis_title="Department",
+            height=max(400, len(reorder_department) * 30)
+        )
+
+        st.plotly_chart(fig3, use_container_width=True)
+
+st.divider()
+
 # PLEASE DO NOT DELETED THE BELOW COMMENT, IT'S A REMINDER FOR THE FUTURE WORKS
 
 # BELOW NEED TO HAD Q6 - Reorder Rate by Department
