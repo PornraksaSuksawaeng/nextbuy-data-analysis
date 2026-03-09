@@ -20,11 +20,20 @@ st.set_page_config(
 )
 
 # Data loading -------------------------------------------------------------
+from dotenv import load_dotenv
+load_dotenv()
+
+USE_S3 = os.getenv('USE_S3', 'False').lower() == 'true'
+S3_BUCKET = os.getenv('S3_BUCKET', '')
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, '..', '..', 'data')
 
 @st.cache_data(show_spinner='Loading data...')
 def load_data():
+    if USE_S3:
+        import s3fs
+        return pd.read_csv(f's3://{S3_BUCKET}/cleaned_data.csv', storage_options={'anon': True})
     return pd.read_csv(os.path.join(DATA_DIR, 'cleaned_data.csv'))
 try:
     df = load_data()
@@ -291,3 +300,59 @@ else:
         The reorder rate drops significantly during the late night and early morning hours, suggesting that customers are less likely to place orders during these times, possibly due to sleep or other activities.
         Understanding the hourly patterns of reorder behavior can help retailers optimize their marketing efforts, such as sending targeted promotions or reminders during peak reorder hours to encourage repeat purchases.
         """)
+
+
+
+
+
+
+
+
+# # NOTE: DO NOT TOUCH
+# def stream_analysis(chart_name, data_summary):
+#     api_key = os.getenv('GROQ_API_KEY', '')
+#     if not api_key:
+#         st.warning("GROQ_API_KEY not found in environment variables. Please set it to enable AI analysis.")
+#         return "API key not found."
+#     try:
+#         client = Groq(api_key=api_key)
+#         prompt = f"""
+#             You are a data analyst presenting results to a retail business jury.
+#             Analyze the following data and write exactly 3 sentences of business insight.
+#             Be specific — use the actual numbers from the data. End with one concrete business recommendation.
+#             Do not use bullet points. Write in plain flowing text.
+
+#             Chart: {chart_name}
+#             Data: {data_summary}
+#         """
+
+#         response = client.chat.completions.create(
+#             model="openai/gpt-oss-120b",
+#             messages=[{"role": "user", "content": prompt}],
+#             stream=True,
+#             temperature=1,
+#             max_completion_tokens=8192,
+#             top_p=1,
+#             reasoning_effort="medium",
+#             stop=None
+#         )
+
+#         for chunk in response:
+#             delta = chunk.choices[0].delta.content
+#             if delta:
+#                 yield delta
+#     except Exception as e:
+#         st.error(f"Error initializing Groq client: {e}")
+#         return "Error initializing AI analysis."
+    
+# if st.button('Generate AI Analysis', key='best_sellers_analysis'):
+#         top3 = total_products.head(3)
+#         summary = (
+#             f"The top best-selling products are: "
+#             f"1. {top3.iloc[0]['product_name']} with {top3.iloc[0]['orders']} orders. "
+#             f"2. {top3.iloc[1]['product_name']} with {top3.iloc[1]['orders']} orders. "
+#             f"3. {top3.iloc[2]['product_name']} with {top3.iloc[2]['orders']} orders."
+#             f"Total products analyzed: {len(total_products)}."
+#             f"Filter: department={selected_department}, aisle={selected_aisle}."
+#         )
+#         st.write_stream(stream_analysis("Best Sellers", summary))
