@@ -20,11 +20,20 @@ st.set_page_config(
 )
 
 # Data loading -------------------------------------------------------------
+from dotenv import load_dotenv
+load_dotenv()
+
+USE_S3 = os.getenv('USE_S3', 'False').lower() == 'true'
+S3_BUCKET = os.getenv('S3_BUCKET', '')
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, '..', '..', 'data')
 
 @st.cache_data(show_spinner='Loading data...')
 def load_data():
+    if USE_S3:
+        import s3fs
+        return pd.read_csv(f's3://{S3_BUCKET}/cleaned_data.csv', storage_options={'anon': True})
     return pd.read_csv(os.path.join(DATA_DIR, 'cleaned_data.csv'))
 try:
     df = load_data()
