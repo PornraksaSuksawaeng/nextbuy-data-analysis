@@ -32,8 +32,7 @@ DATA_DIR = os.path.join(BASE_DIR, '..', '..', 'data')
 @st.cache_data(show_spinner='Loading data...')
 def load_data():
     if USE_S3:
-        import s3fs
-        return pd.read_csv(f's3://{S3_BUCKET}/cleaned_data.csv', storage_options={'anon': True})
+        return pd.read_csv(f's3://{S3_BUCKET}/cleaned_data.csv')
     return pd.read_csv(os.path.join(DATA_DIR, 'cleaned_data.csv'))
 try:
     df = load_data()
@@ -42,7 +41,6 @@ except FileNotFoundError:
     st.stop()
 
 # Sidebar filters -----------------------------------------------------------------------------
-st.title("NextBuy Analysis")
 st.sidebar.caption("EPITECH B1 - Data Science Project - 2026")
 st.sidebar.divider()
 st.sidebar.subheader("Filters")
