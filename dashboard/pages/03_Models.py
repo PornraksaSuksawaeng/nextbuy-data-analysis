@@ -36,7 +36,7 @@ def load_model(model_path, s3_key):
     if USE_S3:
         import s3fs
         fs = s3fs.S3FileSystem()
-        with fs.open(f'{S3_BUCKET}/{s3_key}', 'rb') as f:
+        with fs.open(f's3://{S3_BUCKET}/{s3_key}', 'rb') as f:
             return joblib.load(f)
     if os.path.exists(model_path):
         return joblib.load(model_path)
@@ -215,7 +215,7 @@ else:
         order_number_m2 = st.slider(
             "Order number", 1, 100, 10, key="m2_order_num",
             help="How many orders this customer has placed in total")
-    
+
     with col2:
         st.markdown("**User basket history (engineered features)**")
         user_avg_basket = st.slider(
@@ -236,7 +236,7 @@ else:
         user_n_orders_so_far = st.slider(
             "Total orders so far", 1, 100, 10, key="m2_norders",
             help="How many orders this user has placed before this one")
-    
+
     if st.button("Predict Cart Size", use_container_width=True, type="primary", key="btn_m2"):
         input_m2 = pd.DataFrame([{
             'order_dow':              order_dow_m2,
