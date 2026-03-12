@@ -1,19 +1,42 @@
 # NextBuy — From Raw Data to Smart Decisions
 
-**Team:** Leo BELLARD, Pornraksa SUKSAWAENG, Mathis MONNIN, Nicolas LUSSIGNOL  
-**School:** EPITECH — Bachelor Computer Science, Year 1 (B1).  
-**Project duration:** 5 days.  
+**Team:** Léo BELLARD · Pornraksa SUKSAWAENG · Mathis MONNIN<br>
+**School:** EPITECH — Bachelor Computer Science, Year 1 (B1).<br>
+**Project duration:** 10 days.<br>
 
-[![Python](https://img.shields.io/badge/Python-3.14+-blue)](https://www.python.org/downloads/)
-[![Pandas](https://img.shields.io/badge/Pandas-3.0+-green)](https://pandas.pydata.org/)
-[![Scikit-learn](https://img.shields.io/badge/Scikit--learn-1.0+-orange)](https://scikit-learn.org/)
+[![Python](https://img.shields.io/badge/Python-3.12+-blue)](https://www.python.org/)
+[![Pandas](https://img.shields.io/badge/Pandas-2.0+-green)](https://pandas.pydata.org/)
+[![Scikit-learn](https://img.shields.io/badge/Scikit--learn-1.4+-orange)](https://scikit-learn.org/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-red)](https://streamlit.io/)
+[![AWS](https://img.shields.io/badge/AWS-S3%20%2B%20EC2-yellow)](https://aws.amazon.com/)
 
 ---
 
 ## Project Overview
 
-NextBuy is an e-commerce data analysis project based on the Instacart dataset (~14 million rows).  
-The goal: turn raw data into actionable business insights and build predictive ML models.
+NextBuy is an end-to-end retail analytics project built on the **Instacart dataset — 1.4 million orders, 14 million product rows** across 206 aisles and 21 departments.
+
+The goal: turn raw transactional data into actionable business insights and deploy two production-ready machine learning models inside an interactive dashboard.
+
+### Key Features
+
+- **Data Cleaning Pipeline** — reproducible merge of 5 CSV files, NaN handling, dtype enforcement, and export to a single `cleaned_data.csv`
+- **Exploratory Data Analysis** — 12 business questions answered with varied visualisations, written analysis, and correlation studies
+- **ML Model 1 — Reorder Classifier** — XGBoost pipeline predicting whether a customer will reorder a product (AUC-ROC > 0.75)
+- **ML Model 2 — Cart Size Regressor** — Random Forest pipeline predicting how many items a customer will add to their next order
+- **Bonus Analysis** — KMeans customer segmentation (4 profiles) and Apriori association rules (product pairs by lift)
+- **Interactive Dashboard** — Streamlit app with department filters, KPI cards, 3 chart tabs, 2 ML prediction panels, and a Groq AI global analysis feature
+- **Cloud Deployment** — dataset on AWS S3, app on AWS EC2, credentials via IAM Role
+
+---
+
+## Requirements
+
+- Python 3.12+
+- pip / virtual environment
+- ~2GB disk space (1.2GB dataset + figures + models)
+- AWS credentials (optional — local mode works without them)
+- Groq API key (optional — dashboard works without it)
 
 ---
 
@@ -21,14 +44,14 @@ The goal: turn raw data into actionable business insights and build predictive M
 
 ### 1. Clone the repository
 ```bash
-git clone git@github.com:PornraksaSuksawaengEpitech/nextbuy.git nextbuy
+git clone git@github.com:PornraksaSuksawaengEpitech/nextbuy.git
 cd nextbuy
 ```
 
-### 2. Create a virtual environment (recommended)
+### 2. Create a virtual environment
 ```bash
 python -m venv .venv
-source .venv/bin/activate       # Mac/Linux
+source .venv/bin/activate       # macOS / Linux
 .venv\Scripts\activate          # Windows
 ```
 
@@ -37,29 +60,65 @@ source .venv/bin/activate       # Mac/Linux
 pip install -r requirements.txt
 ```
 
+### 4. Configure environment variables
+```bash
+cp .env.example .env
+# Edit .env and fill in your values
+```
+
+### 5. Add the dataset
+Download the 5 CSV files and place them in `data/`:
+
+```
+data/
+├── orders.csv
+├── order_products.csv
+├── products.csv
+├── aisles.csv
+└── departments.csv
+```
+
+### 6. Run notebooks in order
+```bash
+jupyter notebook
+# Run: 01_cleaning → 02_eda → 03_models_leo → 03_models_mathis → 04_bonus
+```
+
+### 7. Launch the dashboard
+```bash
+streamlit run dashboard/app.py
+```
+Opens at `http://localhost:8501`
+
 ---
 
 ## Project Structure
 
 ```
 nextbuy/
-├── data/                  # Manual download of csv file
+├── data/                        # gitignored — 1.2GB, download manually
 │   ├── orders.csv
 │   ├── order_products.csv
 │   ├── products.csv
 │   ├── aisles.csv
 │   └── departments.csv
-├── figures/               # Charts exported from notebooks
+├── figures/                     # gitignored — charts exported by notebooks
+├── models/                      # gitignored — model1.joblib, model2.joblib
 ├── notebooks/
-│   ├── 01_cleaning.ipynb      # Pornraksa — Loading, merging, cleaning
-│   ├── 02_eda.ipynb           # Pornraksa + Léo — EDA visualizations
-│   ├── 03_models_leo.ipynb    # Léo — Feature engineering + ML models
-│   ├── 03_models_mathis.ipynb # Mathis — ML review, tuning, GridSearch
-│   ├── 04_bonus.ipynb         # Nicolas — Segmentation, rules, SHAP, network
-│   └── notebook.ipynb         # Final merged notebook
+│   ├── 01_cleaning.ipynb        # Pornraksa — load, merge, clean, export
+│   ├── 02_eda.ipynb             # Pornraksa — 12 business questions + correlations
+│   ├── 03_models_leo.ipynb      # Léo — reorder classifier (XGBoost pipeline)
+│   ├── 03_models_mathis.ipynb   # Mathis — cart size regressor (RF pipeline)
+│   ├── 04_bonus.ipynb           # Pornraksa — KMeans + Apriori
+│   └── notebook.ipynb           # Final merged notebook for submission
 ├── dashboard/
-│   └── app.py             # Dash application
+│   ├── app.py                   # Main page — KPIs, charts, ML panels, AI analysis
+│   └── pages/
+│       └── 01_analysis.py       # Deep EDA page — Q7, Q8, Q9, Q11
 ├── requirements.txt
+├── .env.example                 # Environment variable template
+├── .gitignore
+├── CONTRIBUTING.md              # Git workflow for the team
 └── README.md
 ```
 
@@ -69,108 +128,129 @@ nextbuy/
 
 | File | Owner | Content |
 |---|---|---|
-| `01_cleaning.ipynb` | Pornraksa | Load 5 CSV files, merge, clean, handle NaN |
-| `02_eda.ipynb` | Pornraksa + Léo | 12 business analyses, varied visualizations |
-| `03_models_leo.ipynb` | Léo | Feature engineering, 2 ML models, metrics |
-| `03_models_mathis.ipynb` | Mathis | ML review, GridSearch tuning, evaluation |
-| `04_bonus.ipynb` | Pornraksa | KMeans clustering, association rules, SHAP, co-purchase network |
-| `notebook.ipynb` | Pornraksa | Final merged notebook for submission |
+| `01_cleaning.ipynb` | Pornraksa | Load 5 CSV files, merge in memory-efficient order, clean, export |
+| `02_eda.ipynb` | Pornraksa | 12 business analyses, correlation heatmaps for model feature selection |
+| `03_models_leo.ipynb` | Léo | Feature engineering, XGBoost reorder classifier, AUC-ROC evaluation |
+| `03_models_mathis.ipynb` | Mathis | Cart size regressor, leakage-free feature engineering, GridSearchCV |
+| `04_bonus.ipynb` | Pornraksa | KMeans customer segmentation, Apriori association rules |
+| `notebook.ipynb` | All | Final merged notebook for defense submission |
 
 ---
 
-## Team & Git Workflow
+## Dashboard
+ 
+The Streamlit dashboard (`dashboard/app.py`) provides an interactive interface for exploring the dataset and running live ML predictions.
 
-Each member works on **their own branch** to avoid conflicts:
+### Features
 
-| Branch | Owner |
+```
+Sidebar
+├── Department + aisle filters (cascading)
+└── Global AI Analysis button (Groq — cross-dataset insights)
+ 
+Main page
+├── 5 KPI cards (orders, products, reorder rate, avg cart size, organic rate)
+├── Tab 1 — Top 20 bestsellers (Q1)
+├── Tab 2 — Order heatmap by day × hour (Q2)
+├── Tab 3 — Reorder rate by department (Q6)
+├── ML Panel 1 — Reorder probability prediction
+└── ML Panel 2 — Cart size prediction
+ 
+Analysis page (pages/01_analysis.py)
+├── Q7 — Reorder rate vs days since prior order
+├── Q8 — Organic share by department
+├── Q9 — Most common first cart item
+└── Q11 — Reorder rate by hour of day
+```
+
+---
+
+## Machine Learning Models
+
+Both models are exported as **sklearn Pipelines** (StandardScaler + model) — no manual scaling needed on the dashboard side.
+
+| Model | File | Type | Target | Key metric |
+|---|---|---|---|---|
+| Reorder Classifier | `model1.joblib` | Classification | `reordered` (0/1) | AUC-ROC |
+| Cart Size Regressor | `model2.joblib` | Regression | items per order | RMSE, R² |
+
+---
+
+## Cloud Deployment (AWS)
+
+The production version runs on AWS with the following architecture:
+
+```
+S3 bucket
+└── cleaned_data.csv   (1.2GB)
+└── model1.joblib
+└── model2.joblib
+ 
+EC2 instance
+└── streamlit run dashboard/app.py
+    └── USE_S3=true → reads all files from S3 via s3fs
+    └── IAM Role → no hardcoded credentials
+```
+
+Set `USE_S3=true` in your environment to switch from local files to S3. All notebooks and the dashboard support both modes transparently.
+
+---
+
+## Environment Variables
+
+Copy `.env.example` to `.env` and fill in your values:
+
+```
+USE_S3=false                  # true on EC2, false locally
+S3_BUCKET=your-bucket-name
+AWS_ACCESS_KEY_ID=...         # not needed on EC2 (IAM Role)
+AWS_SECRET_ACCESS_KEY=...     # not needed on EC2 (IAM Role)
+AWS_DEFAULT_REGION=eu-west-3
+GROQ_API_KEY=...              # optional — AI analysis feature
+```
+
+---
+
+## Dataset
+
+| Property | Value |
 |---|---|
-| `feat/data-cleaning` | Pornraksa |
-| `feat/eda` | Pornraksa + Léo |
-| `feat/models-leo` | Léo |
-| `feat/models-mathis` | Mathis |
-| `feat/bonus` | Pornraksa |
-| `feat/dashboard` | Pornraksa + Mathis + Nicolas |
-
-**Golden rule: never push directly to `main`. Always merge into `dev` first via a Pull Request.**
-
----
-
-### Daily Routine — Start of Day
-
-Every morning, before writing any code, sync your branch with the latest changes from `dev`.
-This ensures you always have the most up-to-date version of the project.
-
-```bash
-git checkout feat/your-branch
-git pull origin dev
-```
-
-If there are conflicts, resolve them in your files, then:
-
-```bash
-git add .
-git commit -m "fix: resolve merge conflict"
-```
+| Source | [Instacart Market Basket Analysis](https://www.kaggle.com/c/instacart-market-basket-analysis) |
+| Raw size | ~14 million product rows |
+| Orders | ~3.4 million |
+| Products | 49,688 unique |
+| Departments | 21 |
+| Aisles | 206 |
+| Files | 5 CSV files |
 
 ---
 
-### During the Day — Commit Often
+## Technical Stack
 
-After each meaningful section or chart, commit your work with a clear message:
-
-```bash
-git add notebook.ipynb
-git commit -m "feat(eda): add heatmap orders by hour"
-git push origin feat/your-branch
-```
-
-Commit conventions:
-- `feat(eda):` — new analysis or visualization
-- `feat(models):` — new model or metric
-- `fix(data):` — bug fix or data correction
-- `docs:` — README or comments update
+| Area | Tools |
+|---|---|
+| Data manipulation | Python, Pandas, NumPy |
+| Visualisation | Matplotlib, Seaborn, Plotly |
+| Machine learning | Scikit-learn, XGBoost |
+| Unsupervised ML | KMeans, Apriori (mlxtend) |
+| Dashboard | Streamlit |
+| AI integration | Groq API (openai/gpt-oss-120b) |
+| Cloud | AWS S3, EC2, IAM |
+| Model serialisation | Joblib |
+| Environment | Jupyter, VS Code |
 
 ---
 
-### Pull Request — Merging Your Work into `dev`
+## Team
 
-When a section is complete and working, open a Pull Request (PR) to merge your branch into `dev`.
-Never merge directly — always go through a PR so a teammate can review your code.
+This project was completed in **10 days** by three first-year Bachelor Computer Science students (B1) at Epitech Montpellier.
 
-**On GitHub:**
-1. Go to your repository -> click **"Pull requests"** -> **"New pull request"**
-2. Set **base: `dev`** and **compare: `feat/your-branch`**
-3. Write a short description of what you did
-4. Assign a teammate as reviewer
-5. Once approved, click **"Merge pull request"**
-
-**Or via GitHub CLI:**
-```bash
-gh pr create --base dev --head feat/your-branch --title "feat(eda): EDA notebook complete" --body "Added all 7 charts with written analysis."
-```
+| Name | Contributions |
+|---|---|
+| **Pornraksa SUKSAWAENG** | Data cleaning, EDA, bonus analysis, dashboard, AWS deployment |
+| **Léo BELLARD** | Reorder classifier, feature engineering, bonus analysis |
+| **Mathis MONNIN** | Cart size regressor, GridSearchCV, model evaluation |
 
 ---
 
-### After a PR is Merged — Everyone Pulls
-
-Once any PR is merged into `dev`, all team members must sync the next morning:
-
-```bash
-git checkout feat/your-branch
-git pull origin dev
-```
-
-This keeps everyone up to date and prevents conflicts from building up over days.
-
----
-
-### End of Project — Merging `dev` into `main`
-
-`main` is only updated once, on the code freeze day, after everything is validated:
-
-```bash
-git checkout main
-git pull origin main
-git merge dev
-git push origin main
-```
+*Built on the dataset provide by Epitech — Epitech Montpellier 2026*
