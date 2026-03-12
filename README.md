@@ -217,7 +217,7 @@ GROQ_API_KEY=...              # optional — AI analysis feature
 |---|---|
 | Source | [Instacart Market Basket Analysis](https://www.kaggle.com/c/instacart-market-basket-analysis) |
 | Raw size | ~14 million product rows |
-| Orders | ~3.4 million |
+| Orders | ~1.4 million |
 | Products | 49,688 unique |
 | Departments | 21 |
 | Aisles | 206 |
