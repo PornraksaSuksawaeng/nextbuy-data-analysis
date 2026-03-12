@@ -9,8 +9,8 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-import joblib
 from groq import Groq
+from dotenv import load_dotenv
 
 # Page configuration --------------------------------------------------------------
 st.set_page_config(
@@ -20,7 +20,6 @@ st.set_page_config(
 )
 
 # Data and model loading -------------------------------------------------------------
-from dotenv import load_dotenv
 load_dotenv()
 
 USE_S3 = os.getenv('USE_S3', 'False').lower() == 'true'
@@ -28,37 +27,12 @@ S3_BUCKET = os.getenv('S3_BUCKET', '')
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, '..', 'data')
-MODEL1_PATH = os.path.join(BASE_DIR, '..', 'models', 'model1.joblib')
-MODEL2_PATH = os.path.join(BASE_DIR, '..', 'models', 'model2.joblib')
 
 @st.cache_data(show_spinner='Loading data...')
 def load_data():
     if USE_S3:
-        import s3fs
-        return pd.read_csv(f's3://{S3_BUCKET}/cleaned_data.csv', storage_options={'anon': True})
+        return pd.read_csv(f's3://{S3_BUCKET}/cleaned_data.csv')
     return pd.read_csv(os.path.join(DATA_DIR, 'cleaned_data.csv'))
-
-@st.cache_resource(show_spinner=False)
-def load_models1():
-    if USE_S3:
-        import s3fs
-        fs = s3fs.S3FileSystem(anon=True)
-        with fs.open(f's3://{S3_BUCKET}/model1.joblib', 'rb') as f:
-            return joblib.load(f)
-    if os.path.exists(MODEL1_PATH):
-        return joblib.load(MODEL1_PATH)
-    return None
-
-@st.cache_resource(show_spinner=False)
-def load_models2():
-    if USE_S3:
-        import s3fs
-        fs = s3fs.S3FileSystem(anon=True)
-        with fs.open(f's3://{S3_BUCKET}/model2.joblib', 'rb') as f:
-            return joblib.load(f)
-    if os.path.exists(MODEL2_PATH):
-        return joblib.load(MODEL2_PATH)
-    return None
 
 # Load data ------------------------------------------------------------------------
 try:
@@ -66,10 +40,6 @@ try:
 except FileNotFoundError:
     st.error("Data file not found. Please ensure 'cleaned_data.csv' is in the 'data' directory.")
     st.stop()
-
-# Load models ------------------------------------------------------------------------
-model1 = load_models1()
-model2 = load_models2()
 
 # Groq AI Global Analysis ------------------------------------------------------------------------
 def stream_global_analysis(summary):
@@ -114,7 +84,6 @@ def stream_global_analysis(summary):
 
 # Sidebar filters -----------------------------------------------------------------------------
 
-st.title("NextBuy Dashboard")
 st.sidebar.caption("EPITECH B1 - Data Science Project - 2026")
 st.sidebar.divider()
 st.sidebar.subheader("Filters")
@@ -147,7 +116,7 @@ if selected_aisle != 'All':
 df_reorder = filtered_df[filtered_df['is_first_order'] == 0]
 
 # Header ------------------------------------------------------------------------------
-st.title("NextBuy - Customer Purchase Analysis")
+st.title("NextBuy Dashboard")
 st.caption("Analyzing customer purchase patterns and predicting next purchases")
 st.divider()
 
@@ -165,7 +134,6 @@ col3.metric("Avg Cart Size", f"{avg_cart_size:.2f}")
 col4.metric("Reorder Rate", f"{reorder_rate:.2%}")
 col5.metric("Most Purchased Product", total_product)
 
-st.caption(f'Top product: **{total_product}**')
 st.divider()
 
 # Charts -----------------------------------------------------------------------------
@@ -198,7 +166,8 @@ with tab1:
     fig1.update_layout(
         title=f"Top {top_n} Best-Selling Products",
         xaxis_title="Number of Orders",
-        height=max(400, top_n * 30)
+        height=max(400, top_n * 30),
+        template='plotly_white'
     )
 
     st.plotly_chart(fig1, use_container_width=True)
@@ -224,6 +193,13 @@ with tab2:
         colorbar=dict(title='Number of Orders'),
         hovertemplate='Day: %{y}<br>Hour: %{x}<br>Orders: %{z}<extra></extra>'
     ))
+    fig2.update_layout(
+        title="Order Distribution by Day of Week and Hour of Day",
+        xaxis_title="Hour of Day",
+        yaxis_title="Day of Week",
+        height=500,
+        template='plotly_white'
+    )
     st.plotly_chart(fig2, use_container_width=True)
 
 # Q6 - Reorder Rate by Department
@@ -236,8 +212,9 @@ with tab3:
             .mean()
             .reset_index()
             .rename(columns={'reordered': 'reorder_rate'})
+            .sort_values('reorder_rate')
         )
-        avg_cart_size = reorder_department['reorder_rate'].mean()
+        avg_reorder_rate = reorder_department['reorder_rate'].mean()
 
         fig3 = go.Figure(go.Bar(
             x=reorder_department['reorder_rate'],
@@ -249,10 +226,10 @@ with tab3:
         ))
 
         fig3.add_vline(
-            x=avg_cart_size,
+            x=avg_reorder_rate,
             line_dash="dash",
             line_color="orange",
-            annotation_text=f"Avg Reorder Rate: {avg_cart_size:.2%}",
+            annotation_text=f"Avg Reorder Rate: {avg_reorder_rate:.2%}",
             annotation_position="top right"
         )
 
@@ -260,59 +237,13 @@ with tab3:
             title=f"Reorder Rate by Department",
             xaxis_title="Reorder Rate",
             yaxis_title="Department",
-            height=max(400, len(reorder_department) * 30)
+            height=max(400, len(reorder_department) * 30),
+            template='plotly_white'
         )
 
         st.plotly_chart(fig3, use_container_width=True)
 
 st.divider()
-
-# ML Predictions ----------------------------------------------------------------------
-st.subheader("Machine Learning Predictions")
-panel1, panel2 = st.columns(2)
-
-# Machine Learning Model 1 - Next Product Prediction
-with panel1:
-    st.markdown("Next Product Prediction")
-    st.caption("Predicting the next product a customer is likely to purchase based on their order history and other features.")
-
-    if model1 is None:
-        st.warning("Model 1 not found. Please ensure 'model1.joblib' is in the 'models' directory.")
-    else:
-        st.success("Model 1 loaded successfully!")
-        st.info("This model predicts the next product a customer is likely to purchase based on their order history and other features.")
-
-        # TODO: Add two columns with sliders for user input features (e.g., total_orders, avg_cart_size, reorder_rate, etc.)
-
-        # TODO: Add a button to trigger the prediction and display the predicted product and its probability.
-
-        # TODO: Add exception handling for the prediction process and display error messages if the prediction fails.
-
-# Machine Learning Model 2 - Cart Size Prediction
-with panel2:
-    st.markdown("Cart Size Prediction")
-    st.caption("Predicting the cart size a customer is likely to have in their next order based on their order history and other features.")
-
-    if model2 is None:
-        st.warning("Model 2 not found. Please ensure 'model2.joblib' is in the 'models' directory.")
-    else:
-        st.success("Model 2 loaded successfully!")
-        st.info("This model predicts the cart size (number of products) a customer is likely to have in their next order based on their order history and other features.")
-    
-        # TODO: Add two columns with sliders for user input features (e.g., avg reorder rate, order hour of day, days of week, days since last order, etc.)
-
-        # TODO: Add a button to trigger the prediction and display the predicted cart size and its confidence interval.
-
-        # TODO: Add exception handling for the prediction process and display error messages if the prediction fails.
-
-# DISCUSS THE ML PREDICTION WITH LEO AND THE FEATURE IMPORTANCE
-# DISCUSS THE ML CART SIZE PREDICTION WITH MATHIS AND THE FEATURE IMPORTANCE
-# MAYBE ADD A NEW VIEW FOR BETTER UX
-
-# FOR THE DEPLOYMENT, WE CAN USE STREAMLIT CLOUD
-# OR FOR LEARNING PURPOSE, WE CAN USE SNOWFLAKE TO HOST THE DATA AND THE MODELS, AND THEN CONNECT THE DASHBOARD TO SNOWFLAKE TO FETCH THE DATA AND THE PREDICTIONS IN REAL-TIME. THIS WAY, WE CAN SHOWCASE A MORE REALISTIC END-TO-END PIPELINE.
-# ALSO AN OPPORTUNITY TO LEARN ABOUT SNOWFLAKE AND HOW TO INTEGRATE IT WITH PYTHON AND STREAMLIT.
-# ALSO AN OPPORTUNITY TO LEARN AWS OR OTHER CLOUD PROVIDERS TO HOST THE DASHBOARD AND THE MODELS, AND THEN CONNECT EVERYTHING TOGETHER. THIS WAY, WE CAN SHOWCASE A MORE SCALABLE AND PRODUCTION-READY SOLUTION.
 
 # Global AI Analysis ----------------------------------------------------------------------
 if st.session_state.get('global_analysis', False):

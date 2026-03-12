@@ -32,8 +32,7 @@ DATA_DIR = os.path.join(BASE_DIR, '..', '..', 'data')
 @st.cache_data(show_spinner='Loading data...')
 def load_data():
     if USE_S3:
-        import s3fs
-        return pd.read_csv(f's3://{S3_BUCKET}/cleaned_data.csv', storage_options={'anon': True})
+        return pd.read_csv(f's3://{S3_BUCKET}/cleaned_data.csv')
     return pd.read_csv(os.path.join(DATA_DIR, 'cleaned_data.csv'))
 try:
     df = load_data()
@@ -42,7 +41,6 @@ except FileNotFoundError:
     st.stop()
 
 # Sidebar filters -----------------------------------------------------------------------------
-st.title("NextBuy Analysis")
 st.sidebar.caption("EPITECH B1 - Data Science Project - 2026")
 st.sidebar.divider()
 st.sidebar.subheader("Filters")
@@ -77,7 +75,7 @@ st.caption("EDA charts not shown on the main page")
 st.divider()
 
 # Q7 - Reorder rate vs days since prior order -------------------------------------------------------------
-st.subheader("Q7: Reorder Rate vs Days Since Prior Order")
+st.subheader("Reorder Rate vs Days Since Prior Order")
 st.caption("Uses filtered data with first orders excluded since they have no prior order by definition.")
 
 if len(df_reorder) == 0:
@@ -139,19 +137,11 @@ else:
     c1, c2 = st.columns(2)
     c1.metric("Peak Reorder Rate", f"{peak_day['reorder_rate']:.1%}", f"at day {int(peak_day['days_since_prior_order'])}")
     c2.metric("Lowest Reorder Rate", f"{low_day['reorder_rate']:.1%}", f"at day {int(low_day['days_since_prior_order'])}")
-
-    with st.expander("Analysis"):
-        st.markdown("""
-        The reorder rate is highest around 10 days since the prior order, suggesting that customers are most likely to reorder around this time frame.
-        This could be due to typical consumption patterns or the time it takes for customers to realize they need to restock.
-        The reorder rate drops significantly after 20 days, indicating that customers are less likely to reorder if too much time has passed since their last purchase.
-        This insight can help inform marketing strategies, such as sending reminder emails or promotions around the 10-day mark to encourage reorders.
-        """)
     
     st.divider()
 
 # Q8 - Organic proportion by department -------------------------------------------------------------
-st.subheader("Q8: Organic Proportion by Department")
+st.subheader("Organic Proportion by Department")
 st.caption("Shows the proportion of organic products ordered in each department.")
 
 filtered['is_organic'] = filtered['product_name'].str.contains('Organic', case=False, na=False).astype(int)
@@ -202,18 +192,10 @@ top5_organic['Organic share'] = top5_organic['Organic share'].map("{:.1%}".forma
 with st.expander("Top 5 departments by organic share"):
     st.dataframe(top5_organic, use_container_width=True, hide_index=True)
 
-with st.expander("Analysis"):
-    st.markdown("""
-    The produce department has the highest proportion of organic products, which is expected given that fruits and vegetables are commonly available in organic varieties.
-    The dairy and eggs department also has a significant share of organic products, reflecting consumer demand for organic options in these categories.
-    Departments like alcohol and pet supplies have very low proportions of organic products, likely due to limited availability and consumer interest in organic options in these categories.
-    This analysis can help inform inventory decisions and marketing strategies for promoting organic products in departments where they are most popular.
-    """)
-
 st.divider()
 
 # Q9 - First item added to cart -------------------------------------------------------------
-st.subheader("Q9: First Item Added to Cart")
+st.subheader("First Item Added to Cart")
 st.caption("Analyzes which products are most commonly the first item added to the cart in an order.")
 
 top_n_q9 = st.slider("Number of products to display", min_value=5, max_value=25, value=15, key="q9_n")
@@ -243,18 +225,10 @@ fig9.update_layout(
 
 st.plotly_chart(fig9, use_container_width=True)
 
-with st.expander("Analysis"):
-    st.markdown("""
-    The most commonly added first item is often a staple product that customers frequently purchase, such as milk or bread.
-    This suggests that customers may start their shopping with essential items and then add complementary products to their cart.
-    Understanding which products are commonly added first can help retailers optimize product placement and promotions to encourage additional purchases.
-    For example, if milk is often the first item added, placing it near related products like cereal or cookies could increase cross-selling opportunities.
-    """)
-
 st.divider()
 
 # Q11 - Reorder rate by hour of day -------------------------------------------------------------
-st.subheader("Q11: Reorder Rate by Hour of Day")
+st.subheader("Reorder Rate by Hour of Day")
 st.caption("Analyzes how the reorder rate varies by the hour of the day when the order was placed, using only reorder instances (first orders excluded).")
 
 if len(df_reorder) == 0:
@@ -293,66 +267,3 @@ else:
     c1, c2 = st.columns(2)
     c1.metric("Peak reorder hour", f"{peak_hour['reorder_rate']:.1%}", f"at {int(peak_hour['order_hour_of_day'])}h")
     c2.metric("Lowest reorder hour", f"{low_hour['reorder_rate']:.1%}", f"at {int(low_hour['order_hour_of_day'])}h")
-
-    with st.expander("Analysis"):
-        st.markdown("""
-        The reorder rate is highest during the late morning and early afternoon hours, peaking around 11 AM to 1 PM. This could be because customers are more likely to place orders during their lunch break or when they have more free time to shop online.
-        The reorder rate drops significantly during the late night and early morning hours, suggesting that customers are less likely to place orders during these times, possibly due to sleep or other activities.
-        Understanding the hourly patterns of reorder behavior can help retailers optimize their marketing efforts, such as sending targeted promotions or reminders during peak reorder hours to encourage repeat purchases.
-        """)
-
-
-
-
-
-
-
-
-# # NOTE: DO NOT TOUCH
-# def stream_analysis(chart_name, data_summary):
-#     api_key = os.getenv('GROQ_API_KEY', '')
-#     if not api_key:
-#         st.warning("GROQ_API_KEY not found in environment variables. Please set it to enable AI analysis.")
-#         return "API key not found."
-#     try:
-#         client = Groq(api_key=api_key)
-#         prompt = f"""
-#             You are a data analyst presenting results to a retail business jury.
-#             Analyze the following data and write exactly 3 sentences of business insight.
-#             Be specific — use the actual numbers from the data. End with one concrete business recommendation.
-#             Do not use bullet points. Write in plain flowing text.
-
-#             Chart: {chart_name}
-#             Data: {data_summary}
-#         """
-
-#         response = client.chat.completions.create(
-#             model="openai/gpt-oss-120b",
-#             messages=[{"role": "user", "content": prompt}],
-#             stream=True,
-#             temperature=1,
-#             max_completion_tokens=8192,
-#             top_p=1,
-#             reasoning_effort="medium",
-#             stop=None
-#         )
-
-#         for chunk in response:
-#             delta = chunk.choices[0].delta.content
-#             if delta:
-#                 yield delta
-#     except Exception as e:
-#         st.error(f"Error initializing Groq client: {e}")
-#         return "Error initializing AI analysis."
-    
-# if st.button('Generate AI Analysis', key='best_sellers_analysis'):
-#         top3 = total_products.head(3)
-#         summary = (
-#             f"The top best-selling products are: "
-#             f"1. {top3.iloc[0]['product_name']} with {top3.iloc[0]['orders']} orders. "
-#             f"2. {top3.iloc[1]['product_name']} with {top3.iloc[1]['orders']} orders. "
-#             f"3. {top3.iloc[2]['product_name']} with {top3.iloc[2]['orders']} orders."
-#             f"Total products analyzed: {len(total_products)}."
-#             f"Filter: department={selected_department}, aisle={selected_aisle}."
-#         )
-#         st.write_stream(stream_analysis("Best Sellers", summary))
