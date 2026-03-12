@@ -35,7 +35,11 @@ MODEL2_PATH = os.path.join(BASE_DIR, '..', '..', 'models', 'model2.joblib')
 def load_model(model_path, s3_key):
     if USE_S3:
         import s3fs
-        fs = s3fs.S3FileSystem()
+        fs = s3fs.S3FileSystem(
+            key=os.getenv('AWS_ACCESS_KEY_ID'),
+            secret=os.getenv('AWS_SECRET_ACCESS_KEY'),
+            client_kwargs={'region_name': os.getenv('AWS_REGION', 'eu-west-3')}
+        )
         with fs.open(f's3://{S3_BUCKET}/{s3_key}', 'rb') as f:
             return joblib.load(f)
     if os.path.exists(model_path):

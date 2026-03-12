@@ -32,7 +32,14 @@ DATA_DIR = os.path.join(BASE_DIR, '..', '..', 'data')
 @st.cache_data(show_spinner='Loading data...')
 def load_data():
     if USE_S3:
-        return pd.read_csv(f's3://{S3_BUCKET}/cleaned_data.csv')
+        storage_options = {
+            'key': os.getenv('AWS_ACCESS_KEY_ID'),
+            'secret': os.getenv('AWS_SECRET_ACCESS_KEY'),
+            'client_kwargs': {
+                'region_name': os.getenv('AWS_REGION', 'eu-west-3')
+            }
+        }
+        return pd.read_csv(f's3://{S3_BUCKET}/cleaned_data.csv', storage_options=storage_options)
     return pd.read_csv(os.path.join(DATA_DIR, 'cleaned_data.csv'))
 try:
     df = load_data()
