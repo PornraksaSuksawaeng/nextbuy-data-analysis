@@ -173,3 +173,112 @@ else:
 
         except Exception as e:
             st.error(f"Error during prediction: {e}")
+
+st.divider()
+
+# Model 2: Cart Size Regressor ------------------------------------------------------
+st.header('Cart Size Regressor')
+st.caption('Random Forest regressor · Predicts how many items a customer will add to their next order')
+
+if model2 is None:
+    st.warning("Cart Size Regressor model not found. Please ensure 'model2.joblib' is available.")
+else:
+    with st.expander("How this model works", expanded=False):
+        st.markdown("""
+        **Algorithm:** Random Forest Regressor (tuned with GridSearchCV, cv=3)
+
+        **Pipeline steps:**
+        1. `StandardScaler` — normalizes all features to mean=0, std=1
+        2. `RandomForestRegressor` — predicts number of items in the next order
+
+        **Leakage prevention:** all user history features use `.shift(1).expanding().mean()`
+        — each order only sees data from the user's *previous* orders, never the current one.
+
+        **Features:**
+        - **Temporal:** day of week, hour of day, days since last order, order number
+        - **User basket history:** avg basket size (all past orders), avg basket size (last 3 orders),
+          standard deviation of past baskets, last basket size, historical reorder rate, total orders so far
+
+        **Output:** predicted number of products in the next order.
+        """)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("**Order context**")
+        order_dow_m2 = st.selectbox(
+            "Day of week",
+            options=[0,1,2,3,4,5,6],
+            format_func=lambda x: ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][x],
+            key="m2_dow")
+        order_hour_of_day_m2 = st.slider("Hour of day", 0, 23, 10, key="m2_hour")
+        days_since_prior_order_m2 = st.slider("Days since last order", 0, 30, 7, key="m2_days")
+        order_number_m2 = st.slider(
+            "Order number", 1, 100, 10, key="m2_order_num",
+            help="How many orders this customer has placed in total")
+    
+    with col2:
+        st.markdown("**User basket history (engineered features)**")
+        user_avg_basket = st.slider(
+            "Avg basket — all past orders", 1.0, 40.0, 10.0, step=0.5, key="m2_avg",
+            help="Average number of items across all of this user's previous orders")
+        user_avg_basket3 = st.slider(
+            "Avg basket — last 3 orders", 1.0, 40.0, 10.0, step=0.5, key="m2_avg3",
+            help="Average number of items across the user's 3 most recent orders")
+        user_std_basket = st.slider(
+            "Std of past basket sizes", 0.0, 20.0, 3.0, step=0.5, key="m2_std",
+            help="How much this user's basket size varies order to order")
+        user_last_basket = st.slider(
+            "Last basket size", 1, 60, 10, key="m2_last",
+            help="Number of items in this user's most recent order")
+        user_reorder_rate = st.slider(
+            "User historical reorder rate", 0.0, 1.0, 0.6, step=0.01, key="m2_rr",
+            help="Proportion of products this user typically reorders")
+        user_n_orders_so_far = st.slider(
+            "Total orders so far", 1, 100, 10, key="m2_norders",
+            help="How many orders this user has placed before this one")
+    
+    if st.button("Predict Cart Size", use_container_width=True, type="primary", key="btn_m2"):
+        input_m2 = pd.DataFrame([{
+            'order_dow':              order_dow_m2,
+            'order_hour_of_day':      order_hour_of_day_m2,
+            'days_since_prior_order': days_since_prior_order_m2,
+            'order_number':           order_number_m2,
+            'user_avg_basket':        user_avg_basket,
+            'user_avg_basket3':       user_avg_basket3,
+            'user_std_basket':        user_std_basket,
+            'user_last_basket':       user_last_basket,
+            'user_reorder_rate':      user_reorder_rate,
+            'user_n_orders_so_far':   user_n_orders_so_far,
+        }])
+
+        try:
+            predicted   = max(1, round(model2.predict(input_m2)[0]))
+            dataset_avg = 10.1
+
+            st.metric("Predicted Cart Size", f"{predicted} items")
+
+            fig_bar = go.Figure(go.Bar(
+                x=["Dataset Average", "Your Prediction"],
+                y=[dataset_avg, predicted],
+                marker_color=["lightgray", "steelblue"],
+                text=[f"{dataset_avg:.1f}", str(predicted)],
+                textposition="outside"
+            ))
+            fig_bar.update_layout(
+                title="Predicted Cart Size vs Dataset Average",
+                yaxis_title="Number of items",
+                yaxis=dict(range=[0, max(dataset_avg, predicted) * 1.3]),
+                height=320,
+                template="plotly_white"
+            )
+            st.plotly_chart(fig_bar, use_container_width=True)
+
+            if predicted > dataset_avg * 1.2:
+                st.info(f"Large shop — {predicted} items is well above the dataset average of {dataset_avg:.0f}.")
+            elif predicted < dataset_avg * 0.8:
+                st.info(f"Small top-up shop — {predicted} items is below the dataset average of {dataset_avg:.0f}.")
+            else:
+                st.info(f"Typical shop — close to the dataset average of {dataset_avg:.0f} items.")
+
+        except Exception as e:
+            st.error(f"Prediction failed: {str(e)}")
