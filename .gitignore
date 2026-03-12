@@ -5,6 +5,7 @@
 
 # Data files too big to be tracked by git -------------------------------------------------------
 data/
+data_backup/
 *.csv
 *.json
 *.xlsx
