@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import joblib
+from groq import Groq
 
 # Page configuration --------------------------------------------------------------
 st.set_page_config(
@@ -19,6 +20,12 @@ st.set_page_config(
 )
 
 # Data and model loading -------------------------------------------------------------
+from dotenv import load_dotenv
+load_dotenv()
+
+USE_S3 = os.getenv('USE_S3', 'False').lower() == 'true'
+S3_BUCKET = os.getenv('S3_BUCKET', '')
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, '..', 'data')
 MODEL1_PATH = os.path.join(BASE_DIR, '..', 'models', 'model1.joblib')
@@ -26,16 +33,29 @@ MODEL2_PATH = os.path.join(BASE_DIR, '..', 'models', 'model2.joblib')
 
 @st.cache_data(show_spinner='Loading data...')
 def load_data():
+    if USE_S3:
+        import s3fs
+        return pd.read_csv(f's3://{S3_BUCKET}/cleaned_data.csv', storage_options={'anon': True})
     return pd.read_csv(os.path.join(DATA_DIR, 'cleaned_data.csv'))
 
 @st.cache_resource(show_spinner=False)
 def load_models1():
+    if USE_S3:
+        import s3fs
+        fs = s3fs.S3FileSystem(anon=True)
+        with fs.open(f's3://{S3_BUCKET}/model1.joblib', 'rb') as f:
+            return joblib.load(f)
     if os.path.exists(MODEL1_PATH):
         return joblib.load(MODEL1_PATH)
     return None
 
 @st.cache_resource(show_spinner=False)
 def load_models2():
+    if USE_S3:
+        import s3fs
+        fs = s3fs.S3FileSystem(anon=True)
+        with fs.open(f's3://{S3_BUCKET}/model2.joblib', 'rb') as f:
+            return joblib.load(f)
     if os.path.exists(MODEL2_PATH):
         return joblib.load(MODEL2_PATH)
     return None
@@ -51,7 +71,49 @@ except FileNotFoundError:
 model1 = load_models1()
 model2 = load_models2()
 
+# Groq AI Global Analysis ------------------------------------------------------------------------
+def stream_global_analysis(summary):
+    api_key = os.getenv('GROQ_API_KEY')
+    if not api_key:
+        st.warning("Groq API key not found. Please set the GROQ_API_KEY environment variable to enable AI analysis.")
+        return
+    try:
+        client = Groq(api_key=api_key)
+        prompt = f"""
+            You are a senior data analyst presenting to a retail business audience.
+            You have metrics from 7 different analyses of the same grocery dataset.
+            Your task:
+            1. Find 2-3 meaningful connections between the different analyses.
+            2. Identify what they collectively reveal about customer behavior and product performance.
+            3. Give 3 concrete, specific business recommendations backed by the numbers.
+
+            Be specific and use the actual numbers. Write in flowing paragraphs, not bullet points. Make it engaging and insightful.
+            Keep the total response under 300 words.
+
+            {summary}
+        """
+
+        response = client.chat.completions.create(
+            model="openai/gpt-oss-120b",
+            messages=[{"role": "user", "content": prompt}],
+            stream=True,
+            temperature=1,
+            max_completion_tokens=8192,
+            top_p=1,
+            reasoning_effort="medium",
+            stop=None
+        )
+
+        for chunk in response:
+            delta = chunk.choices[0].delta.content
+            if delta:
+                yield delta
+    
+    except Exception as e:
+        st.error(f"Error during AI analysis: {str(e)}")
+
 # Sidebar filters -----------------------------------------------------------------------------
+
 st.title("NextBuy Dashboard")
 st.sidebar.caption("EPITECH B1 - Data Science Project - 2026")
 st.sidebar.divider()
@@ -69,6 +131,10 @@ aisles = ['All'] + sorted(aisle_pool)
 selected_aisle = st.sidebar.selectbox("Select Aisle", aisles)
 
 st.sidebar.divider()
+
+if st.sidebar.button('Global AI Analysis', use_container_width=True, type='primary'):
+    st.session_state['global_analysis'] = True
+
 st.sidebar.caption('14M rows - 5 datasets - 12 analytics - 2 ML models')
 
 # Filter data based on selections --------------------------------------------------------------
@@ -247,3 +313,100 @@ with panel2:
 # OR FOR LEARNING PURPOSE, WE CAN USE SNOWFLAKE TO HOST THE DATA AND THE MODELS, AND THEN CONNECT THE DASHBOARD TO SNOWFLAKE TO FETCH THE DATA AND THE PREDICTIONS IN REAL-TIME. THIS WAY, WE CAN SHOWCASE A MORE REALISTIC END-TO-END PIPELINE.
 # ALSO AN OPPORTUNITY TO LEARN ABOUT SNOWFLAKE AND HOW TO INTEGRATE IT WITH PYTHON AND STREAMLIT.
 # ALSO AN OPPORTUNITY TO LEARN AWS OR OTHER CLOUD PROVIDERS TO HOST THE DASHBOARD AND THE MODELS, AND THEN CONNECT EVERYTHING TOGETHER. THIS WAY, WE CAN SHOWCASE A MORE SCALABLE AND PRODUCTION-READY SOLUTION.
+
+# Global AI Analysis ----------------------------------------------------------------------
+if st.session_state.get('global_analysis', False):
+    st.session_state['global_analysis'] = False
+    st.divider()
+    st.subheader("Global AI Analysis")
+    st.info("Generating insights from the data using Groq's AI model. This may take a moment...")
+
+    with st.spinner("Collecting data from all analyses..."):
+        # Q1 - Best Sellers
+        top3_p = total_products.tail(3)
+
+        # Q2 - Order Heatmap
+        day_labels_global = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+        peak_idx = pivot.values.argmax()
+        pr, pc = divmod(peak_idx, pivot.shape[1])
+        heatmap_peak_day = day_labels_global[pivot.index[pr]]
+        heatmap_peak_hour = pivot.columns[pc]
+        heatmap_peak_value = int(pivot.values[pr, pc])
+        heatmap_summary = f"The peak order time is on {heatmap_peak_day} at {heatmap_peak_hour}:00 with {heatmap_peak_value} orders."
+
+        # Q6 - Reorder Rate by Department
+        top_department = reorder_department.nlargest(1, 'reorder_rate').iloc[0] if len(reorder_department) > 0 else None
+        low_department = reorder_department.nsmallest(1, 'reorder_rate').iloc[0] if len(reorder_department) > 0 else None
+        reorder_summary = f"The department with the highest reorder rate is {top_department['department']} at {top_department['reorder_rate']:.2%} and the lowest is {low_department['department']} at {low_department['reorder_rate']:.2%}." if top_department is not None and low_department is not None else "No reorder data available."
+
+        # Q7 - Reorder vs day since prior order
+        scatter_global = (df_reorder
+            .groupby('days_since_prior_order')['reordered']
+            .mean()
+            .reset_index()
+            .rename(columns={'reordered': 'reorder_rate'})
+        )
+
+        scatter_global = scatter_global[
+            (scatter_global['days_since_prior_order'] > 0) &
+            (scatter_global['days_since_prior_order'] < 30)  # Focus on the first 30 days for better insights  
+        ]
+
+        peak_scatter = scatter_global.loc[scatter_global['reorder_rate'].idxmax()]
+        low_scatter = scatter_global.loc[scatter_global['reorder_rate'].idxmin()]
+
+        # Q8 - Organic proportion
+        filtered_df['is_organic'] = filtered_df['product_name'].str.contains('Organic', case=False, na=False).astype(int)
+        organic_global = (filtered_df
+            .groupby('department')['is_organic']
+            .agg(['sum', 'count'])
+        )
+        organic_global['organic_rate'] = organic_global['sum'] / organic_global['count']
+        top_organic = organic_global.nlargest(1, 'organic_rate')
+        low_organic = organic_global.nsmallest(1, 'organic_rate')
+
+        # Q9 - First cart item
+        first_cart_global = (filtered_df[filtered_df['add_to_cart_order'] == 1]
+            .groupby('product_name')['order_id']
+            .count()
+            .nlargest(3)
+            .reset_index()
+            .rename(columns={'order_id': 'count'})
+        )
+
+        # Q11 - Reorder by hour
+        reorder_hour_global = (df_reorder
+            .groupby('order_hour_of_day')['reordered']
+            .mean()
+            .reset_index()
+            .rename(columns={'reordered': 'reorder_rate'})
+        )
+
+        global_summary = f"""
+            GLOBAL NEXTBUY ANALYSIS SUMMARY
+            Filter: department={selected_department}, aisle={selected_aisle}
+
+            Q1 — BESTSELLERS:
+            Top 3 products: {top3_p.iloc[2]['product_name']} ({top3_p.iloc[2]['orders']:,} orders), {top3_p.iloc[1]['product_name']} ({top3_p.iloc[1]['orders']:,} orders), {top3_p.iloc[0]['product_name']} ({top3_p.iloc[0]['orders']:,} orders).
+
+            Q2 — ORDER TIMING:
+            Peak ordering: {heatmap_peak_day} at {heatmap_peak_hour}:00 ({heatmap_peak_value:,} orders).
+
+            Q6 — REORDER BY DEPARTMENT:
+            {"Top reorder dept: " + top_department['department'] + " (" + f"{top_department['reorder_rate']:.1%}" + "). Lowest: " + low_department['department'] + " (" + f"{low_department['reorder_rate']:.1%}" + ")." if top_department is not None else "No reorder data."}
+            Average reorder rate: {reorder_rate:.1%}.
+
+            Q7 — REORDER VS DAYS SINCE LAST ORDER:
+            Peak reorder rate {peak_scatter['reorder_rate']:.1%} at day {int(peak_scatter['days_since_prior_order'])}. Drops to {low_scatter['reorder_rate']:.1%} by day {int(low_scatter['days_since_prior_order'])}.
+
+            Q8 — ORGANIC PROPORTION:
+            Most organic department: {top_organic.index[0]} ({top_organic['organic_rate'].iloc[0]:.1%}). Least organic: {low_organic.index[0]} ({low_organic['organic_rate'].iloc[0]:.1%}).
+
+            Q9 — FIRST CART ITEM:
+            Most common first item: {first_cart_global.iloc[0]['product_name']} ({first_cart_global.iloc[0]['count']:,} times). Second: {first_cart_global.iloc[1]['product_name']} ({first_cart_global.iloc[1]['count']:,} times).
+
+            Q11 — REORDER BY HOUR:
+            Peak reorder hour: {int(reorder_hour_global.iloc[0]['order_hour_of_day'])}:00 ({reorder_hour_global.iloc[0]['reorder_rate']:.1%}). Lowest: {int(reorder_hour_global.iloc[-1]['order_hour_of_day'])}:00 ({reorder_hour_global.iloc[-1]['reorder_rate']:.1%}).
+
+        """
+    st.write_stream(stream_global_analysis(global_summary))
