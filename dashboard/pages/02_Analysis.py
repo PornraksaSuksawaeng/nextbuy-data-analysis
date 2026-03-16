@@ -29,7 +29,7 @@ S3_BUCKET = os.getenv('S3_BUCKET', '')
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, '..', '..', 'data')
 
-@st.cache_data(show_spinner='Loading data...')
+@st.cache_data(show_spinner='Loading data...', ttl=3600)
 def load_data():
     if USE_S3:
         storage_options = {
@@ -39,7 +39,13 @@ def load_data():
                 'region_name': os.getenv('AWS_REGION', 'eu-west-3')
             }
         }
-        return pd.read_csv(f's3://{S3_BUCKET}/cleaned_data.csv', storage_options=storage_options)
+        try:
+            return pd.read_parquet(f's3://{S3_BUCKET}/cleaned_data.parquet', storage_options=storage_options)
+        except Exception:
+            return pd.read_csv(f's3://{S3_BUCKET}/cleaned_data.csv', storage_options=storage_options)
+    parquet_path = os.path.join(DATA_DIR, 'cleaned_data.parquet')
+    if os.path.exists(parquet_path):
+        return pd.read_parquet(parquet_path)
     return pd.read_csv(os.path.join(DATA_DIR, 'cleaned_data.csv'))
 try:
     df = load_data()
@@ -151,7 +157,10 @@ else:
 st.subheader("Organic Proportion by Department")
 st.caption("Shows the proportion of organic products ordered in each department.")
 
-filtered['is_organic'] = filtered['product_name'].str.contains('Organic', case=False, na=False).astype(int)
+# is_organic computed once on full df, not on filtered — avoids recompute on every filter change
+if 'is_organic' not in df.columns:
+    df['is_organic'] = df['product_name'].str.contains('Organic', case=False, na=False).astype(int)
+filtered['is_organic'] = filtered['is_organic'] if 'is_organic' in filtered.columns else filtered['product_name'].str.contains('Organic', case=False, na=False).astype(int)
 
 organic_proportion = (filtered
     .groupby('department')['is_organic']
