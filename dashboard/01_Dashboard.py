@@ -28,7 +28,7 @@ S3_BUCKET = os.getenv('S3_BUCKET', '')
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, '..', 'data')
 
-@st.cache_data(show_spinner='Loading data...')
+@st.cache_data(show_spinner='Loading data...', ttl=3600)
 def load_data():
     if USE_S3:
         storage_options = {
@@ -38,7 +38,13 @@ def load_data():
                 'region_name': os.getenv('AWS_REGION', 'eu-west-3')
             }
         }
-        return pd.read_csv(f's3://{S3_BUCKET}/cleaned_data.csv', storage_options=storage_options)
+        try:
+            return pd.read_parquet(f's3://{S3_BUCKET}/cleaned_data.parquet', storage_options=storage_options)
+        except Exception:
+            return pd.read_csv(f's3://{S3_BUCKET}/cleaned_data.csv', storage_options=storage_options)
+    parquet_path = os.path.join(DATA_DIR, 'cleaned_data.parquet')
+    if os.path.exists(parquet_path):
+        return pd.read_parquet(parquet_path)
     return pd.read_csv(os.path.join(DATA_DIR, 'cleaned_data.csv'))
 
 # Load data ------------------------------------------------------------------------
@@ -121,6 +127,10 @@ if selected_aisle != 'All':
     filtered_df = filtered_df[filtered_df['aisle'] == selected_aisle]
 
 df_reorder = filtered_df[filtered_df['is_first_order'] == 0]
+
+# Pre-compute is_organic once — avoids recomputing inside AI block on every button click
+filtered_df = filtered_df.copy()
+filtered_df['is_organic'] = filtered_df['product_name'].str.contains('Organic', case=False, na=False).astype(int)
 
 # Header ------------------------------------------------------------------------------
 st.title("NextBuy Dashboard")
@@ -294,7 +304,6 @@ if st.session_state.get('global_analysis', False):
         low_scatter = scatter_global.loc[scatter_global['reorder_rate'].idxmin()]
 
         # Q8 - Organic proportion
-        filtered_df['is_organic'] = filtered_df['product_name'].str.contains('Organic', case=False, na=False).astype(int)
         organic_global = (filtered_df
             .groupby('department')['is_organic']
             .agg(['sum', 'count'])
